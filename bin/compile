@@ -24,25 +24,13 @@ readonly SOURCE_MAPS_DIRECTORY=$(cat ${SOURCE_MAPS_PATH_CONFIG_FILE})
 echo "-----> Uploading source maps..."
 
 for source_map_full_path in $(ls $SOURCE_MAPS_DIRECTORY/*.js*.map); do
-  source_map_file_pattern="${source_map_full_path}"
-  newest_map_file=$(ls -t ${source_map_file_pattern} | head -n 1)
-
-  [[ $source_map_full_path != $newest_map_file ]] && continue
-
-  # For example, next line returns something like application.js-953b9963fa86c1e67de0cba30d95743859144257.map
   source_map_file_name=$(basename ${source_map_full_path})
-  # For example, next line returns something like application.js
-  raw_minified_file_name="${source_map_file_name%-*.map}"
-  # For example, next line returns something like application-*.js
-  fingerprinted_minified_file_pattern="${raw_minified_file_name/./-\*.}"
-  # For example, next line returns something like application-b3f9be8b847d3f361d42e108ccf1d53633e4db93.js
-  newest_compiled_file=$(ls -t ${SOURCE_MAPS_DIRECTORY}/${fingerprinted_minified_file_pattern} | head -n 1 | xargs basename)
 
   echo "       Uploading file ${source_map_full_path}"
   curl --silent --output /dev/null --show-error --fail https://api.rollbar.com/api/1/sourcemap \
     -F access_token=${ROLLBAR_POST_SERVER_TOKEN} \
     -F version=${SOURCE_VERSION} \
-    -F minified_url=//${BASE_URL}/${newest_compiled_file} \
+    -F minified_url=//${BASE_URL}/${source_map_file_name} \
     -F source_map=@${source_map_full_path}
 done
 
